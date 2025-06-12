@@ -1,0 +1,280 @@
+---
+title: "The Pathway from Research to STEM Careers"
+author: "Candra Kou, Crystal Tran, Aaeena Joshi"
+format:
+  revealjs:
+    theme: dracula
+    transition: fade
+    incremental: true 
+    footer: "STEM Opportunities Research"
+    embed-resources: true
+---
+
+## Undergraduate Research 
+
+![Scientist Pipetting into Microcentrifugal Tubes](LAB IMAGE.jpg){width=80% fig-alt="The image shows a blurred chin and torso of an individual with a white lab coat and blue gloves in the background with the focus being on one hand holding a pipette and another holding a microcentrifugal tubes. On the table, there is a container that is holding several microcentrifugal tubes"}
+
+*Photo by [Julia Koblitz](https://unsplash.com/@jkoblitz) on [Unsplash](https://unsplash.com/photos/person-holding-orange-and-white-toothbrush-RlOAwXt2fEA)*
+
+
+## Undergraduate Research and Careers
+
+- Undergraduate research refers to mentored research that undergraduate students participate in conducting. Students participate in research to contribute to advance the field as well as gain experience to progress in their academic or professional career.
+- The correlation between undergraduate research to academic and professional career progression, the data from the study about how "Undergraduate Research Experiences Broaden Diversity in the Scientific Workforce" sought to analyze the correlation.
+
+## STUDY #1 :Research Participation 
+
+
+**Does participating in any mentored research (low- or high-intensity) raise the probability of:** 
+
+::: {.fragments}
+-  accepting a place in a science graduate programs
+-  entering a STEM career
+:::
+
+**Is there a difference in results for low-intensity versus high-intensity experiences?**
+
+## Explanation of data: Study #1
+
+- Study by Oxford University: *"Undergraduate research experiences broaden diversity in the scientific workforce"*
+
+- **Variables Explored:**
+
+::: {.fragments}
+- `MRL_1d`: 1 semester, low-intensity research  
+- `MRL_2d`: 2 semesters, low-intensity research  
+- `MRH_1d`: 1 semester, high-intensity research  
+- `MRH_2d`: 2 semesters, high-intensity research  
+- `SciGradAccept`: Accepted into a science grad program  
+- `STEM_Career`: Currently in a STEM career  
+:::
+
+
+## RESEARCH INTENSITY vs GRADUATE PROGRAM ACCEPTANCE 
+
+```{r}
+#| fig.alt: "Heat map displaying the proportion of different research durations and intensities that got accepted into Science Grad Programs. High intensity research, regardless of duration (1 or 2 semesters) has equal proportion of acceptance into grad programs (37%). Low intensity research for 1 semester had the lowest proportion of acceptance into grad programs (28%), while low intensity research for 2 semesters had the highest proportion of acceptance into grad programs (43%). This indicates that higher intensity and duration of undergraduate research increases the likelihood of acceptance into science graduate programs."
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+research_data <- read.csv("Research_Outcomes.csv")  # READS DATA FROM CSV FILE
+research_intensity <- research_data |>
+  select(MRL_1d, MRL_2d, MRH_1d, MRH_2d, SciGradAccept) # SELECTS COLUMNS FROM RESEARCH DATA TO ANALYZE RESEARCH INTENSITY
+research_long <-research_intensity |>
+  pivot_longer( cols = c(MRL_1d, MRL_2d, MRH_1d, MRH_2d), # PIVOT RESHAPES DATA: INCREASE NUMBER OF ROWS REDUCES NUMBER OF COLUMNS
+                names_to = "Intensity", # STORES VARIBLE NAMES BASED ON INTENSITY (MRH, MRL)
+                values_to = "Value") |> # STORES VALUES
+  filter(Value == 1) # FILTER = KEEPS ROWS WITH VALUE OF 1 
+research_grad <- research_long |>
+  group_by(Intensity) |> # GROUPS DATA BASED ON RESEARCH INTENSITY 
+  summarize(Proportion = mean(SciGradAccept), na.rm = TRUE) # CALCULATES MEAN OF SCIGRADACCEPTANCE AND IGNORES MISSING VALUES
+ggplot(research_grad, aes(x = "SciGradAccept", 
+                             y = Intensity,
+                             fill = Proportion)) + # PLOTS SCIGRADACCEPT VS INTENSITY
+  geom_tile() + # DRAWS HEATMAP RECTANGLES, ADDS BORDERS
+  geom_text(aes(label = round(Proportion,2))) + # PLACES LABEL (PROPORTION) INSIDE THE HEATMAP AND MAINTAINS 2 DECIMAL PLACES
+  scale_fill_viridis_c(option = "C") + # COLOR FOR VISUALLY IMPAIRED
+labs (
+  title = "Acceptance into Graduate Programs Increases with Research Intensity",
+  x = "Accepted to Science Grad Program ",
+  y = "Research Intensity Level (Total Semesters)") + # LABELS AXIS AND TITLE
+theme_minimal()
+# THE PROPORTION COMES FROM THE MEAN(SCIGRADACCEPT) WHICH LOOKS AT THE PROPORTION OF STUDENTS WITH THE DIFFERENCE OF RESEARCH INTENSITY AND SCIGRADACCEPTANCE
+```
+:::{.r-fit-text}
+Heat map displaying the proportion of different research duration and intensities that got students accepted into Science Grad Programs.
+:::
+
+
+
+## INTENSITY vs STEM CAREER
+
+```{r}
+#| fig.alt: "Gif of 4 column charts for each intensity and duration of undergraduate research (high, low, 1 semester, 2 semesters), comparing career outcome (STEM or non-STEM careers) to the number of students in each. In all graphs, there is a higher number of students in non-STEM careers compared to STEM careers, regardless of research intensity or duration. In the graphs for both high and low intensity research, the increase in duration of research increased the proportion of students who went into STEM careers compared to non-STEM careers. This indicates that longer duration of undergraduate research increases the probability of pursuing a STEM career."
+# install.packages("gganimate")
+# install.packages("gifski")
+library(gganimate) # ANIMATES GGPLOTS 
+library(gifski) # MAKES GGANIMATE INTO GIF 
+research_outcomes <- research_data |>
+  select(MRL_1d, MRL_2d, MRH_1d, MRH_2d, STEM_Career) |>
+  pivot_longer(
+    cols = c(MRL_1d, MRL_2d, MRH_1d, MRH_2d),
+    names_to = "Intensity",
+    values_to = "Value"
+  ) |>
+  filter(Value == 1) # FIRST 7 LINES OF THIS CODE DOES THE SAME THING AS THE ONE ABOVE
+outcome_data <- research_outcomes |>
+  group_by(Intensity, STEM_Career) |> # GROUPS DATA BASED ON RESEARCH INTENSITY AND STEM CAREERS
+  summarize(count = n(), .groups = "drop") |> # REDUCES EACH GROUP INTO ONE ROW WITH A SUMMARY, COUNTS HOW MANY ROWS ARE IN THE GROUP, AND THEN UNGROUPS THE DATA AFTERWARDS SO ANY FUTURE FUNCTIONS CAN USE THE FULL DATASET 
+  mutate(STEM_Career = factor(STEM_Career, levels = c(0, 1), labels = c("Non-STEM", "STEM"))) # CONVERTS STEM CAREER FROM NUMERICAL TO DESCRIPTIVE LABELS OF 0 IS NON-STEM AND 1 IS STEM CAREERS
+career_plot <- ggplot(outcome_data, aes(x = STEM_Career, y = count, fill = STEM_Career)) + # STARTS A GGPLOT WITH THE OUTCOME DATA WHERE X IS CAREER TYPE AND Y IS NUMBER OF STUDENTS AND FILL COLORS BARS BY CAREER TYPE
+  geom_col() + # ADDS SOLID BARS TO PLOT 
+  labs(
+  title = "High-Intensity 2 Semester Research Contributed to access to STEM Career",
+  subtitle = "Research Intensity: {closest_state}",
+  x = "Career Outcomes",
+  y = "Number of Students"
+) +
+  theme_minimal() + # REMOVES BACKROUND CLUTTER AND IS A GGPLOT THEME 
+  transition_states(
+    states = Intensity,#HOW LONG THE TRANSITION BETWEEN INTENSITY
+    transition_length = 2, # HOW LONG TRANSTION IS BETWEEN ONE INTENSITY TO THE NEXT
+    state_length = 1 # HOW LONG EACH INTENSITY IS DISPLAYED
+  ) + 
+  enter_fade() + # NEW BAR FADE IN WHEN NEW INTENSITY IS BEING TO SHOWN
+  exit_fade() + # OLD BARS FADE WHEN INTENSITY ENDS
+  ease_aes('cubic-in-out') # EASING FUNCTION MAKES THE ANIMATION RUN SMOOTH BETWEEN TRANSTIONS 
+# animate(career_plot, width = 600, height = 400, renderer = gifski_renderer("career.gif")) 
+# THIS LINE AT THE END THAT HAS A HASHTAG IS ONLY USED ONCE. IT PROVIDES THE DIMENSIONS OF THE GIF WITH THE WIDTH AND HEIGHT AND THEN RENDERER SAVES GIF TO LOCAL DIRECTORY AND SAVES IT AS A GIF 
+
+```
+::: {.r-fit-text}
+![4 animated column charts for each intensity and duration of undergraduate research (high, low, 1 semester, 2 semesters), comparing career outcome (STEM or non-STEM careers) to the number of students in each.](career.gif)
+:::
+
+
+
+## LOW- vs HIGH-INTENSITY OUTCOMES
+
+```{r}
+#| fig.alt: "Bar graphs displaying the proportion of students who pursued STEM careers and who got accepted into scientific graduate school programs. The groups of students are divided by intensity and duration of undergraduate research. In both scientific grad school acceptance and engagement in STEM careers, having a longer duration of research (2 semesters) increases the likelihood of either case, regardless of research intensity. Notably, the proportion of high intensity research is greater than low intensity for engagement in STEM careers."
+research_long <- research_data |>
+  select(MRL_1d, MRL_2d, MRH_1d, MRH_2d, SciGradAccept, STEM_Career) |>
+  pivot_longer(cols = c(MRL_1d, MRL_2d, MRH_1d, MRH_2d),  # PIVOTS THE 4 INTENSITY VARIABLES
+               names_to = "Intensity_Condition",          # NEW COLUMN CONTAINING VARIABLE NAMES
+               values_to = "Research_Value")              # NEW COLUMN CONTAINING 0/1 FOR INTENSITY
+research_filtered <- research_long |>
+  filter(Research_Value == 1) |> #FILTERS ONLY ROWS WHERE THE INTENSITY CONDITION WAS MET (value = 1)
+  select(Intensity_Condition, SciGradAccept, STEM_Career)  # KEEP INTENSITY + OUTCOMES
+outcome_long <- research_filtered |>
+  pivot_longer(cols = c(SciGradAccept, STEM_Career),   # PUT OUTCOME VARIABLES INTO ONE COLUMN
+               names_to = "Outcome_Type",              # NAME OF OUTCOME 
+               values_to = "Outcome_Value")            
+outcome_summary <- outcome_long |>
+  count(Intensity_Condition, Outcome_Type, Outcome_Value) |>
+  group_by(Intensity_Condition, Outcome_Type) |>
+  mutate(Proportion = n / sum(n)) |> #  PROPORTION OF STUDENTS WITH OUTCOME IN EACH GROUP
+  filter(Outcome_Value == 1)   # KEEP ONLY OUTCOME = 1 
+ggplot(outcome_summary, aes(x = Outcome_Type,
+                            y = Proportion,
+                            fill = Intensity_Condition)) + # CREATE BAR PLOT
+  geom_col(position = "dodge") + # SIDE-BY-SIDE BARS FOR EACH INTENSITY GROUP
+  labs(title = "Two Semesters of Research Correlate with Greater STEM Career and Grad School Acceptance",
+       x = "Outcome Type",
+       y = "Proportion of Students",
+       fill = "Research Group") +
+  theme_minimal()
+
+```
+::: {.r-fit-text}
+Bar graphs displaying the proportion of students who pursued STEM careers and who got accepted into scientific graduate school programs. The groups of students are divided by intensity and duration of undergraduate research.
+:::
+
+
+
+## CONCLUSION
+-	From the visualizations created through this study, we observed that overall, longer research seems to be correlated to a greater rate of students pursuing a future STEM career and being accepted into graduate school for their career.
+- As for our second question, we found that the difference between outcomes of low-intensity and high-intensity was too varied to be conclusive of any trends, and as such concluded that the duration of research had the biggest impact.
+
+
+
+## STUDY #2: SOIL SCIENCE
+
+- **Does participating in any mentored research (low- or high-intensity) raise the probability of: Does constitutional support increase the probability of availability of specialized programs in Universities?**
+
+::: {.fragments}
+-	Institutional support: Land Grants
+-	Specialized Program: Soil Sciences 
+:::
+
+- **Is there a difference in results for institutions with vs. without land grant status?**
+
+## Explanation of data: Study #2
+-	Data collected by Soil Science Society of America Journal 
+-	Dataset name: "Data on universities offering undergraduate degrees that train students for soil science careers at universities in the USA and its territories"
+-	Variables explored:
+-	(Land Grant) - Indicates whether the institution is a land-grant university
+-	(Soil Science) - Indicates if the institution offers soil science
+
+
+## LAND GRANT vs SOIL SCIENCE OPPERTUNITIES
+```{r}
+#| fig.alt: "Bar graph displaying the proportion of institutions with soil science programs from institutions who either do or do not receive land grants. Notably, institutions that do have land grant status are twice as likely to have Soil Science programs, compared to institutions without land grant status."
+soil_data <- read.csv("Accrediting_Agencies_Master.csv")  # READS CSV FILE 
+soil_access <- soil_data |>
+  select(Land.Grant, Soil.Science) # SELECTS LAND GRANT STATUS AND SOIL SCIENCE PROGRAM AVAILABILITY
+soil_yes <- soil_access |>
+    filter(tolower(Soil.Science) == "yes") # FILTERS SCHOOLS THAT OFFER SOIL SCIENCE PROGRAMS AND FILTERS FOR AVALIBABILITY IN DATA REGARDLESS OF CAPITALIZATION OR LOWERCASE
+soil_summary <- soil_yes |>
+  group_by(Land.Grant) |> # GROUP BY LAND GRANT STATUS AND CALCULATES PROPORTION OF SCOOLS OFFERING SOIL SCIENCE
+  summarize(Proportion = n() / nrow(soil_access)) # CALCULATES PROPORTION BASED ON THE NUMBER OF SCHOOLS OFFERING SOIL SCIENCE OUT OF TOTAL NUMBER OF SCHOOLS
+ggplot(soil_summary, aes(x = Land.Grant, y = Proportion, fill = Land.Grant)) +
+  geom_col() + # PLOTS BARS 
+  geom_text(aes(label = round(Proportion, 2)),vjust = -0.5) + # DISPLAYS PROPORTION CALCULATIONS ABOVE EACH BAR
+  labs(
+    title = "Institutions with Land Grant Status was Twice as likely to have Soil Science Opportunities",
+    x = "Land Grant Institution",
+    y = "Proportion with Soil Science Program" 
+  ) +
+  theme_minimal()
+```
+::: {.r-fit-text}
+Bar graph displaying the proportion of institutions with soil science programs from institutions who either do or do not receive land grants.
+:::
+
+
+## CONCLUSION 
+- From this second study, we concluded that availability of land grants was positively related to the proportion of available opportunities for certain STEM programs (specifically Soil Science in this case)
+-	This means that institutions with land grants (and thus more funding) were able to provide more resources for students in the program
+
+
+
+## DATA SOURCE 
+
+- Hernandez, P. R., Woodcock, A., Estrada, M., & Schultz, P. W. (2017). Undergraduate research experiences broaden diversity in the scientific workforce. BioScience, 68(3), 204–211. https://doi.org/10.1093/biosci/bix163 
+- Brevik, E. C. (2019). Bachelors-Level Soil Science training at Land-Grant institutions in the United States and its territories. Natural Sciences Education, 48(1), 180021. https://doi.org/10.4195/nse2018.12.0021
+
+
+## RESOURCES #1
+
+- CRAN Packages By Name. (2017). R-Project.org. https://cran.r-project.org/web/packages/available_packages_by_name.html
+- Coder, R. (2024, January 5). Heat map in ggplot2. R CHARTS | a Collection of Charts and Graphs Made With the R Programming Language. https://r-charts.com/correlation/heat-map-ggplot2/ 
+- Holtz, Y. (n.d.). Animated barplot transition with R. https://r-graph-gallery.com/288-animated-barplot-transition.html
+
+## RESOURCES #2
+
+- A grammar of animated graphics. (n.d.). https://gganimate.com/index.html
+- Package index. (n.d.). https://gganimate.com/reference/index.html
+- Renderers provided by gganimate — renderers. (n.d.). https://gganimate.com/reference/renderers.html
+- Dodge overlapping objects side-to-side — position_dodge. (n.d.). https://ggplot2.tidyverse.org/reference/position_dodge.html
+
+## RESOURCES #3 
+
+- LiquidBrain Bioinformatics. (2020, April 25). How to use gganimate in R | A RStudio Tutorial for Beginners [Video]. YouTube. https://www.youtube.com/watch?v=ccuZYgcwusU 
+- Transition between several distinct stages of the data — transition_states. (n.d.). https://gganimate.com/reference/transition_states.html 
+- Chang, W. (2025, June 9). 3.9 Adding Labels to a Bar Graph | R Graphics Cookbook, 2nd edition. https://r-graphics.org/RECIPE-BAR-GRAPH-LABELS.html
+
+## RESOURCES #4
+
+- Chang, W. (2025a, June 9). 3.2 Grouping Bars Together | R Graphics Cookbook, 2nd edition. https://r-graphics.org/RECIPE-BAR-GRAPH-GROUPED-BAR.html
+
+
+## NOTES AND COMMENTS 
+
+Co-authors: Candra Kou, Crystal Tran
+
+2 Basic tools used: filter, pivot_longer
+
+1 Intermediate tool used: Created an animated graph
+
+Link to data set 1: https://datadryad.org/dataset/doi:10.5061/dryad.50m50
+
+Link to data set 2: https://datadryad.org/dataset/doi:10.5061/dryad.qjq2bvqdj
+
+Outside Source 1: https://academic.oup.com/bioscience/article/68/3/204/4831122?login=true
+
+Outside Source 2: https://acsess.onlinelibrary.wiley.com/doi/10.1002/saj2.20140
+
+
+
+
